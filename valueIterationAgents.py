@@ -172,4 +172,58 @@ class PrioritizedSweepingValueIterationAgent(AsynchronousValueIterationAgent):
 
     def runValueIteration(self):
         "*** YOUR CODE HERE ***"
+        predecessors = {}
+        for state in self.mdp.getStates():
+          predecessors[state] = set()
+        for state in self.mdp.getStates():
+          for action in self.mdp.getPossibleActions(state):
+            for nextState, prob in self.mdp.getTransitionStatesAndProbs(state, action):
+              if prob > 0:
+                currPreds = predecessors[nextState]
+                currPreds.add(state)
+                predecessors[nextState] = currPreds
+
+        pq = util.PriorityQueue()
+
+        for s in self.mdp.getStates():
+          if not self.mdp.isTerminal(s):
+            maxQ = float('-inf')
+            for a in self.mdp.getPossibleActions(s):
+              if (maxQ < self.computeQValueFromValues(s, a)):
+                maxQ = self.computeQValueFromValues(s, a)
+            if maxQ == float('-inf'):
+              diff = self.values[s]
+            else:
+              diff = abs(self.values[s] - maxQ)
+            pq.push(s, -diff)
+
+        for i in range(self.iterations):
+          if pq.isEmpty():
+            return
+          s = pq.pop()
+          if not self.mdp.isTerminal(s):
+            bestAction = self.computeActionFromValues(s) # TODO this line and next are sus
+            self.values[s] = self.computeQValueFromValues(s, bestAction) # TODO how do I update the value of s?
+          for p in predecessors[s]:
+            if not self.mdp.isTerminal(p):
+              maxQ = float('-inf')
+              for a in self.mdp.getPossibleActions(p):
+                if (maxQ < self.computeQValueFromValues(p, a)):
+                  maxQ = self.computeQValueFromValues(p, a)
+              if maxQ == float('-inf'):
+                diff = abs(self.values[p])
+              else:
+                diff = abs(self.values[p] - maxQ)
+              if (diff > self.theta):
+                pq.update(p, -diff)
+                # pq.push(p, -diff)
+
+
+
+
+
+
+
+
+
 
